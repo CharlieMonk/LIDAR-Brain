@@ -71,6 +71,11 @@ class Reading (object):
                         return 777
                 else:
                         return self.range / Reading.MM_PER_INCH
+
+        @property
+        def raw_range_in_inches(self):
+                return self.range / Reading.MM_PER_INCH
+        
         #
         #  The formal representation of the reading contains the index (degrees)
         #  and the range in inches.
@@ -216,7 +221,7 @@ class Laser (object):
 	mapnames = []
 	cmdmode = 0
 
-	def __init__(self,sd):
+	def __init__(self,sd,calibration_compensation=6):
                 """setup internal variables and associate the laser with open serial port"""
 		self.results=0
 		self.haslaser=0
@@ -274,8 +279,10 @@ class Laser (object):
         #
         # Collect a complete set of packets and concatenate them into
         #
-        def gather_full_rotation(self):
-                """Read a rotation of lidar data and return it as a collection of packets"""
+        def gather_full_rotation(self,reverse_data=True):
+                """
+                Read a rotation of lidar data and return it as a collection of packets
+                """
                 rotation = []
                 slice_index = 0
 
@@ -304,8 +311,11 @@ class Laser (object):
                         logger.info("Sleeping for {:02f} seconds".format(elapsed_time))
                         sleep(elapsed_time)
 
-                # return either the real or the synthetic rotation
-                return rotation
+                # return the data (maybe reversed if the lidar is upside down?)
+                if reverse_data:
+                        return rotation[::-1]
+                else:
+                        return rotation
 
 
 #
@@ -330,7 +340,7 @@ class Rotation(object):
         scan based upon the change in the range reported by the same
         heading range from scan-to-scan.
         """
-        left_to_right = (-90, 91)
+        right_to_left = (-90, 91)
         full_rotation_packets = 90
         
         def __init__(self, rotation_packets):
@@ -350,10 +360,10 @@ class Rotation(object):
                 #
                 self.all_readings = sorted(list(itertools.chain(*self.packets)),
                                            key = lambda x: x.heading)
-                
+
                 view_readings = [self.all_readings[i]
-                                 for i in range(*Rotation.left_to_right)
-                                 if not self.all_readings[i].discard]
+                                 for i in range(*Rotation.right_to_left)
+                                 if not self.all_readings[i].error]
 
                 #
                 #  For ease of manipulation, the view data is just stored as

@@ -29,7 +29,7 @@ class FakeRotation:
         # then group all of the points by degree measure
         tmp_data = itertools.groupby(tmp_data, lambda x: int(round(x[0])))
         # pick the closest one in each group because it shadows the others
-        self.view_data = [min(interval, key=lambda x: x[1]) for _, interval in tmp_data]
+        self.view_data = [min(interval, key=lambda x: x[1]) for _, interval in tmp_data][::-1]
         self.origin = robot.position
         self.orientation = robot.heading
         self.rpm = rpm
@@ -44,7 +44,7 @@ class FakeRotation:
         return self.view_data
 
     def cartesian_data(self):
-        return [FakeRotation.polar_to_cart(-theta, radius)
+        return [FakeRotation.polar_to_cart(theta, radius)
                 for theta, radius in self.polar_data()]
 
     def write_to_file(self, file_name):
@@ -120,9 +120,9 @@ class FieldModel (object):
         scaled_by_10_data = [(x, FieldModel.field_depth)
                            for x in xrange(-FieldModel.field_width, -FieldModel.tower_width)]
 
-        # set up an infinity back wall behind the tower
-        scaled_by_10_data.extend((x, FieldModel.field_depth+FieldModel.back_back)
-                                 for x in range(-FieldModel.back_width, FieldModel.back_width))
+        # no need for infinity back wall behind the tower
+        #scaled_by_10_data.extend((x, FieldModel.field_depth+FieldModel.back_back)
+        #                         for x in range(-FieldModel.back_width, FieldModel.back_width))
         #
         # generate points for the left facet (with 16" opening)  This is 3 points on either
         # side of the goal, running along a line that is 120 degrees (with a slope of -sqrt(3)
